@@ -1,0 +1,45 @@
+pipeline {
+  agent any
+  tools {
+    jdk 'jdk8'
+  }
+  stages {
+    stage('Build') {
+      steps {
+        // Compile and test the project, generating Jacoco reports
+        sh 'mvn clean verify'
+      }
+    }
+    stage('Publish Coverage') {
+      steps {
+        // Merge Jacoco reports and publish the coverage report
+        jacoco(execPattern: '**/target/jacoco.exec', classPattern: '**/target/classes', sourcePattern: '**/src/main/java') {
+          merge(includeBranchCoverage: true, includeCategory: 'org.jacoco.report.check.Limit', sourcePattern: '**/src/main/java', classPattern: '**/target/classes', execPattern: '**/target/jacoco.exec')
+          report()
+        }
+      }
+    }
+  }
+  post {
+    always {
+      // Display the coverage report with multiple graphs
+      jacoco(execPattern: '**/target/jacoco.exec', classPattern: '**/target/classes', sourcePattern: '**/src/main/java') {
+        coverageReport 'jacoco'
+      }
+    }
+  }
+}
+
+jacoco {
+  execPattern '**/build/jacoco/*.exec'
+  classPattern '**/build/classes/**/*.class'
+  sourcePattern '**/src/**/*.java'
+}
+
+publishCoverage {
+  Jacoco {
+    execPattern '**/build/jacoco/*.exec'
+    classPattern '**/build/classes/**/*.class'
+    sourcePattern '**/src/**/*.java'
+  }
+}
